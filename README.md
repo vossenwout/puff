@@ -27,29 +27,15 @@ Homebrew keeps `puff` and `Puff.app` together under the Cellar so no extra setup
    ```
 3. Instruct your favorite cli agent (codex, claude code, cursor cli) to invoke the puff command when a task is done.
 
-## Local Build
+#### Example Codex-CLI 
 
-1. Run the bundler to produce `dist/puff` and `dist/Puff.app` (release build by default, set `CONFIG=debug` if you prefer):
-   ```sh
-   Scripts/build_and_bundle.sh
-   ```
-3. Symlink the CLI somewhere on your `$PATH`:
-   ```sh
-   ln -sf "$PWD/dist/puff" /usr/local/bin/puff   # adjust path as needed
-   ```
-Keep `Puff.app` next to the CLI (i.e., leave both files inside `dist/` or copy them together somewhere else); the wrapper looks for the helper in the same directory.
+Go to configuration file `~/.codex/config.yaml` and add the following as notify command:
 
-
-### Debugging
-
-Set `PUFF_DEBUG=1` when launching to surface the helper’s internal log lines:
-
-```sh
-PUFF_DEBUG=1 ./dist/puff assistantA
+```toml
+notify = ["sh", "-c", "puff \"$(basename \"$PWD\")-agent\""
 ```
 
-Without the flag, the CLI stays silent on success just like terminal-notifier.
-
+This will make codex-cli send a notification using puff when a task is done, with the agent name based on the current folder name.
 ## Releasing
 
 Tag and push the new version:
