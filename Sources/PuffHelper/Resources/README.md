@@ -1,0 +1,1 @@
+Place your `AppIcon.icns` file in this directory so the helper bundle can display it inside the macOS notification. `Scripts/build_and_bundle.sh` copies the file (or the fallback `AppIcons.icns`) into `Puff.app/Contents/Resources`.

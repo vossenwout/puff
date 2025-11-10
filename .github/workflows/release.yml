@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    env:
+      TAP_REPO: vossenwout/homebrew-puff
+      FORMULA_PATH: Formula/puff.rb
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build bundle
+        run: Scripts/build_and_bundle.sh
+
+      - name: Package artifacts
+        run: |
+          mkdir -p artifacts
+          tar -czf "artifacts/puff-${GITHUB_REF_NAME}.tar.gz" -C dist puff Puff.app
+          shasum -a 256 "artifacts/puff-${GITHUB_REF_NAME}.tar.gz" > "artifacts/puff-${GITHUB_REF_NAME}.sha256"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**
+
+      - name: Update Homebrew tap
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          if [ -z "${HOMEBREW_TAP_TOKEN}" ]; then
+              echo "HOMEBREW_TAP_TOKEN secret not configured. Cannot update tap automatically."
+              exit 1
+          fi
+
+          SHA256=$(cut -d ' ' -f1 "artifacts/puff-${GITHUB_REF_NAME}.sha256")
+          VERSION="${GITHUB_REF_NAME#v}"
+          RELEASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/puff-${GITHUB_REF_NAME}.tar.gz"
+
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/${TAP_REPO}.git" tap
+          cd tap
+
+          mkdir -p "$(dirname "${FORMULA_PATH}")"
+          cat > "${FORMULA_PATH}" <<EOF
+          class Puff < Formula
+            desc "CLI helper that fires macOS notifications for AI agents"
+            homepage "https://github.com/${GITHUB_REPOSITORY}"
+            url "${RELEASE_URL}"
+            sha256 "${SHA256}"
+            version "${VERSION}"
+            license "MIT"
+
+            def install
+              bin.install "puff"
+              prefix.install "Puff.app"
+            end
+
+            test do
+              assert_match "Usage", shell_output("\#{bin}/puff --help")
+            end
+          end
+          EOF
+
+          git config user.name "${GITHUB_ACTOR}"
+          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          git add "${FORMULA_PATH}"
+          git commit -m "puff ${GITHUB_REF_NAME}"
+          git push origin HEAD:main

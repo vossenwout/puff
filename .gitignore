@@ -1,0 +1,16 @@
+.DS_Store
+/.build
+/.swift-module-cache
+/.clang-module-cache
+/.tmp
+/dist
+/Puff.app
+/Packages
+xcuserdata/
+DerivedData/
+.swiftpm/configuration/registries.json
+.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+.netrc
+.cache
+.clang-module-cache
+.cache
